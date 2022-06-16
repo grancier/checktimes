@@ -1,8 +1,105 @@
-import Head from 'next/head'
-import Image from 'next/image'
-import styles from '../styles/Home.module.css'
+import React, { useEffect, useState } from "react";
+import { useRouter } from "next/router";
+import axios from "axios";
+import * as cheerio from "cheerio";
+import Head from "next/head";
+import Image from "next/image";
+import styles from "../styles/home.scss";
 
-export default function Home() {
+export async function getServerSideProps() {
+  const origVaxTypes = [
+    " -- Select Appointment Type -- ",
+    "J&J",
+    "J&J Booster ",
+    "Moderna Booster",
+    "Moderna Immunocompromised (Additional)",
+    "Moderna Primary Series 1st Dose ",
+    "Moderna Primary Series 2nd Dose ",
+    "Pfizer Booster ",
+    "Pfizer Immunocompromised (Additional)",
+    "Pfizer Pediatric Booster APPOINTMENT ONLY",
+    "Pfizer Pediatric Primary Series 1st Dose ",
+    "Pfizer Pediatric Primary Series 2nd Dose ",
+    "Pfizer Primary Series 1st Dose ",
+    "Pfizer Primary Series 2nd Dose",
+  ];
+
+  let vaxTypes = [];
+  const result = await axios
+    .get("https://www.essexcountynjvaccination.org/vaccine/list")
+    .then(function (res) {
+      const $ = cheerio.load(res.data);
+      $("form select")
+        .find("option")
+        .each((i, op) => {
+          vaxTypes.push($(op).text());
+        });
+      return vaxTypes;
+    })
+    .catch(function (error) {
+      console.log(error);
+    });
+
+  const sameVax = JSON.stringify(result) === JSON.stringify(origVaxTypes);
+  console.log("sameVax: ", sameVax);
+  return { props: { sameVax } };
+}
+
+export default function Home(props) {
+  const { sameVax } = props;
+  const router = useRouter();
+  // Call this function whenever you want to
+  // refresh props!
+  const refreshData = () => {
+    router.replace(router.asPath);
+  };
+  
+  function sendNotification (data) {
+    if (data == undefined || !data) { return false }
+    var title = (data.title === undefined) ? 'Notification' : data.title
+    var clickCallback = data.clickCallback
+    var message = (data.message === undefined) ? 'null' : data.message
+    var icon = (data.icon === undefined) ? 'https://cdn2.iconfinder.com/data/icons/mixed-rounded-flat-icon/512/megaphone-64.png' : data.icon
+    var sendNotification = function (){
+        var notification = new Notification(title, {
+            icon: icon,
+            body: message
+        })
+        if (clickCallback !== undefined) {
+            notification.onclick = function () {
+                clickCallback()
+                notification.close()
+            }
+        }
+    }
+
+    if (!window.Notification) {
+        return false
+    } else {
+        if (Notification.permission === 'default') {
+            Notification.requestPermission(function (p) {
+                if (p !== 'denied') {
+                    sendNotification()
+                }
+            })
+        } else {
+            sendNotification()
+        }
+    }
+}
+useEffect(() => {
+    refreshData();
+    const interval = setInterval(() => {
+      refreshData();
+    }, 100000);
+
+    return () => clearInterval(interval);
+  }, []);
+  console.log("sameVax Client: ", sameVax);
+  if (!sameVax) {
+    return <p>loading…</p>;
+  }
+
   return (
     <div className={styles.container}>
       <Head>
@@ -12,44 +109,8 @@ export default function Home() {
       </Head>
 
       <main className={styles.main}>
-        <h1 className={styles.title}>
-          Welcome to <a href="https://nextjs.org">Next.js!</a>
-        </h1>
-
-        <p className={styles.description}>
-          Get started by editing{' '}
-          <code className={styles.code}>pages/index.js</code>
-        </p>
-
-        <div className={styles.grid}>
-          <a href="https://nextjs.org/docs" className={styles.card}>
-            <h2>Documentation &rarr;</h2>
-            <p>Find in-depth information about Next.js features and API.</p>
-          </a>
-
-          <a href="https://nextjs.org/learn" className={styles.card}>
-            <h2>Learn &rarr;</h2>
-            <p>Learn about Next.js in an interactive course with quizzes!</p>
-          </a>
-
-          <a
-            href="https://github.com/vercel/next.js/tree/canary/examples"
-            className={styles.card}
-          >
-            <h2>Examples &rarr;</h2>
-            <p>Discover and deploy boilerplate example Next.js projects.</p>
-          </a>
-
-          <a
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-          >
-            <h2>Deploy &rarr;</h2>
-            <p>
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
-        </div>
+        {sameVax && <h1 className={styles.vaxSame}>FALSE</h1>}
+        {!sameVax && <h1 className={styles.vaxChanged}>TRUE!!!</h1>}
       </main>
 
       <footer className={styles.footer}>
@@ -58,12 +119,12 @@ export default function Home() {
           target="_blank"
           rel="noopener noreferrer"
         >
-          Powered by{' '}
+          Powered by{" "}
           <span className={styles.logo}>
             <Image src="/vercel.svg" alt="Vercel Logo" width={72} height={16} />
           </span>
         </a>
       </footer>
     </div>
-  )
+  );
 }
