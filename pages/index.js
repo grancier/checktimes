@@ -41,7 +41,6 @@ export async function getServerSideProps() {
     });
 
   const sameVax = JSON.stringify(result) === JSON.stringify(origVaxTypes);
-  console.log("sameVax: ", sameVax);
   return { props: { sameVax } };
 }
 
@@ -88,15 +87,13 @@ export default function Home(props) {
     }
   };
 
-  useEffect(() => {
-    // Call this function whenever you want to
-    // refresh props!
-    const refreshData = () => {
-      router.replace(router.asPath);
-    };
-    
-    refreshData();
+  // Call this function whenever you want to
+  // refresh props!
+  const refreshData = () => {
+    router.replace(router.asPath);
+  };
 
+  useEffect(() => {
     const interval = setInterval(() => {
       !sameVax && sendNotification({
         title: "MODERNA VACCINE",
@@ -110,7 +107,7 @@ export default function Home(props) {
     }, 480000);
 
     return () => clearInterval(interval);
-  }, [router, sameVax]);
+  });
   
   return (
     <div className={styles.container}>
