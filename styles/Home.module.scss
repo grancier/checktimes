@@ -10,6 +10,20 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
+
+  h1 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 16rem;
+    margin: 0;
+    font-weight: bold;
+  }
+
+  .vaxSame {
+    color: red
+  }
+  .vaxChanged {
+    color: greenyellow;
+  }
 }
 
 .footer {
