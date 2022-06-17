@@ -102,13 +102,17 @@ export default function Home(props) {
         clickCallback: function () {
           alert("do something when clicked on notification");
         },
-      });
+      }) && playAudio();
       refreshData();
     }, 480000);
 
     return () => clearInterval(interval);
   });
   
+  const playAudio = () => {
+      const audio = new Audio('/abomb.mp3');
+      audio.play();
+  }
   return (
     <div className={styles.container}>
       <Head>
